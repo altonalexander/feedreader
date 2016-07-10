@@ -1,3 +1,4 @@
+import boto3
 from flask import Flask
 app = Flask(__name__)
 
@@ -5,6 +6,7 @@ app = Flask(__name__)
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
+
 
 # for the current day's worth of tweets to read
 # call xml/cleaned/filtered_health/besthealth/0
@@ -24,7 +26,20 @@ def show_xml(feedcategory, feedname, source='cleaned', daysago='0'):
 @app.route('/entities/<feedcategory>/')
 @app.route('/entities/<feedcategory>/<feedname>/')
 def show_entities(feedcategory='', feedname=''):
-    result = 'ENTITIES in: Feed Category %s\n' % feedcategory
-    result = result + 'Feed Name %s\n' % feedname
+
+    # create the filename
+    filename = 'rob_princetonventures'
+    if ( feedcategory!='' ):
+	filename = filename+'/%s' % feedcategory
+    if ( feedname!='' ):
+	filename = filename+'/%s' % feedname
+    filename = filename + '/entities.csv'
+
+    # get the preprocessed file from s3
+    s3 = boto3.resource('s3')
+    object = s3.Object('com.frontanalytics.feedreader',filename)
+
+    result = object.get()["Body"].read()
+
     return result
 
