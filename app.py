@@ -7,19 +7,55 @@ app = Flask(__name__)
 def hello_world():
     return 'Hello, World!'
 
+# config
+@app.route('/config/')
+@app.route('/config/<file>')
+def show_config(file='feeds.json'):
+    filename = 'rob_princetonventures'
+    filename = filename + '/feeds.json'
 
-# for the current day's worth of tweets to read
-# call xml/cleaned/filtered_health/besthealth/0
-# call xml/original/filtered_health/besthealth/0 
-@app.route('/xml/<feedcategory>/<feedname>/<source>/<int:daysago>')
-@app.route('/xml/<feedcategory>/<feedname>')
-def show_xml(feedcategory, feedname, source='cleaned', daysago='0'):
-    result = 'XML for: Feed Category %s\n' % feedcategory
-    result = result + 'Feed Name %s\n' % feedname
-    result = result + '%d number of days ago\n' % int(daysago)
-    result = result + 'Source %s\n' % source
+    # get the preprocessed file from s3
+    s3 = boto3.resource('s3')
+    object = s3.Object('com.frontanalytics.feedreader',filename)
+    result = object.get()["Body"].read()
     return result
 
+
+# for the current day's worth of tweets to read
+# call feed/filtered_health/besthealth
+@app.route('/feed/<feedcategory>/<feedname>/')
+def show_xml(feedcategory, feedname, source='cleaned', daysago='0'):
+    filename = 'rob_princetonventures'
+    if ( feedcategory!='' ):
+        filename = filename+'/%s' % feedcategory
+    if ( feedname!='' ):
+        filename = filename+'/%s' % feedname
+    filename = filename + '/cleaned_latest.xml'
+
+    # get the preprocessed file from s3
+    s3 = boto3.resource('s3')
+    object = s3.Object('com.frontanalytics.feedreader',filename)
+    result = object.get()["Body"].read()
+    return result
+
+
+# return the log
+@app.route('/log/')
+@app.route('/log/<feedcategory>/')
+@app.route('/log/<feedcategory>/<feedname>/')
+def show_log(feedcategory, feedname, source='cleaned', daysago='0'):
+    filename = 'rob_princetonventures'
+    if ( feedcategory!='' ):
+        filename = filename+'/%s' % feedcategory
+    if ( feedname!='' ):
+        filename = filename+'/%s' % feedname
+    filename = filename + '/log.html'
+
+    # get the preprocessed file from s3
+    s3 = boto3.resource('s3')
+    object = s3.Object('com.frontanalytics.feedreader',filename)
+    result = object.get()["Body"].read()
+    return result
 
 # for all the word counts
 @app.route('/entities/')
